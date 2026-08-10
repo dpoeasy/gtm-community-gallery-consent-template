@@ -1,0 +1,13 @@
+# Lixo de sistema operacional
+.DS_Store
+Thumbs.db
+
+# Diretórios de editor
+.idea/
+.vscode/
+*.swp
+
+# Exportações do editor de modelos do GTM. O arquivo publicado é template.tpl;
+# exportações trazem o nome de exibição da tag e não devem ser versionadas.
+*Consentimento do Usuário*.tpl
+!template.tpl
