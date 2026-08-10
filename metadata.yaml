@@ -1,0 +1,11 @@
+homepage: "https://www.dponet.com.br"
+documentation: "https://github.com/dpoeasy/dpoeasy-gtm-community-gallery-consent-template#readme"
+versions:
+  - sha: SUBSTITUIR_PELO_HASH_DO_COMMIT
+    changeNotes: |
+      Versão inicial.
+      - Estado padrão negado (deny-by-default) aplicado incondicionalmente.
+      - Leitura do cookie DPOEasyUserConsent com suporte aos modos accept_all,
+        reject_non_essential e customizado.
+      - Suporte a ad_user_data e ad_personalization (Consent Mode v2).
+      - Tabela opcional de estados padrão por região.
