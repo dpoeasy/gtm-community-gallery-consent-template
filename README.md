@@ -126,7 +126,7 @@ nunca é ambíguo.
 
 ## Suporte
 
-Abra uma [issue](https://github.com/dpoeasy/dpoeasy-gtm-community-gallery-consent-template/issues)
+Abra uma [issue](https://github.com/dpoeasy/gtm-community-gallery-consent-template/issues)
 neste repositório.
 
 ## Licença

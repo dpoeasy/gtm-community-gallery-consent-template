@@ -1,5 +1,5 @@
 homepage: "https://www.dponet.com.br"
-documentation: "https://github.com/dpoeasy/dpoeasy-gtm-community-gallery-consent-template#readme"
+documentation: "https://github.com/dpoeasy/gtm-community-gallery-consent-template#readme"
 versions:
   - sha: SUBSTITUIR_PELO_HASH_DO_COMMIT
     changeNotes: |
