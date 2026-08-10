@@ -1,7 +1,7 @@
 homepage: "https://www.dponet.com.br"
 documentation: "https://github.com/dpoeasy/gtm-community-gallery-consent-template#readme"
 versions:
-  - sha: SUBSTITUIR_PELO_HASH_DO_COMMIT
+  - sha: 84e077872686535eb347cab072e675957fa7654e
     changeNotes: |
       Versão inicial.
       - Estado padrão negado (deny-by-default) aplicado incondicionalmente.
