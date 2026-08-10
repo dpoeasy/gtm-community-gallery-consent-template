@@ -35,27 +35,20 @@ banner — ele apenas comunica ao Google as escolhas que o banner registra.
 
 ## Configuração
 
-### Estados padrão por região (opcional)
+### Estado padrão
 
-Por padrão, o modelo nega todas as categorias não essenciais em qualquer
-região. Não é necessário configurar nada para que isso aconteça.
+Não há nada a configurar. O modelo nega todas as categorias não essenciais em
+qualquer região, sempre, e **não expõe nenhuma opção capaz de afrouxar esse
+comportamento** — não existe configuração que faça o consentimento falhar
+aberto.
 
-Use a tabela **Estados padrão** apenas quando precisar de um comportamento
-diferente por região:
+A chamada usa `wait_for_update: 500`, que dá 500 ms para o banner informar as
+escolhas do visitante antes das tags dispararem.
 
-| Campo | Descrição | Exemplo |
-|---|---|---|
-| `region` | Códigos de região ISO 3166-2, separados por vírgula. Vazio = todas as regiões. | `BR, PT` |
-| `granted` | Tipos de consentimento concedidos por padrão nessa região. | `security_storage` |
-| `denied` | Tipos de consentimento negados por padrão nessa região. | `ad_storage, analytics_storage` |
-
-Cada linha vira uma chamada de `setDefaultConsentState` com
-`wait_for_update: 500`, que dá tempo ao banner de informar as escolhas do
-visitante antes das tags dispararem.
-
-> Uma linha com `region` vazio sobrescreve o padrão global do modelo. Se você
-> quiser apenas restringir mais em uma região específica, deixe o padrão global
-> intocado e adicione somente a linha da região.
+Se o seu caso exige estado padrão diferente por país — por exemplo liberar
+analytics onde não se exige consentimento prévio — abra uma issue descrevendo o
+cenário. A funcionalidade foi deliberadamente deixada de fora desta versão para
+que não exista configuração capaz de enfraquecer a proteção por engano.
 
 ### Redação de dados de anúncios e passagem de URL
 
@@ -63,6 +56,26 @@ visitante antes das tags dispararem.
 |---|---|
 | `ads_data_redaction` | Quando ativo, redige dados de anúncios enquanto `ad_storage` estiver negado. |
 | `url_passthrough` | Quando ativo, repassa informações de clique via parâmetros de URL enquanto o consentimento estiver negado. |
+
+## Privacidade e segurança
+
+Este modelo **não faz nenhuma requisição de rede** e **não envia dado nenhum
+para fora do navegador**. Ele lê um cookie e conversa exclusivamente com a API
+de consentimento do próprio Google Tag Manager.
+
+As permissões declaradas no modelo são a prova auditável disso — o sandbox do
+Tag Manager impede qualquer operação não declarada:
+
+| Permissão | Escopo concedido |
+|---|---|
+| Lê cookies | Somente o cookie `DPOEasyUserConsent`. Nenhum outro |
+| Acessa estado de consentimento | Leitura e escrita dos 7 tipos do Consent Mode v2 |
+| Grava na camada de dados | Somente as chaves `ads_data_redaction` e `url_passthrough` |
+| Registra no console | Apenas mensagens de diagnóstico quando o cookie está ilegível |
+
+Não há permissão de envio de pixel, de requisição HTTP, de acesso ao
+`localStorage`, nem de leitura de variáveis globais. Você pode conferir na aba
+**Permissões** do editor de modelos antes de instalar.
 
 ## Mapeamento de categorias
 

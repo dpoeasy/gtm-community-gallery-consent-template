@@ -8,4 +8,4 @@ versions:
       - Leitura do cookie DPOEasyUserConsent com suporte aos modos accept_all,
         reject_non_essential e customizado.
       - Suporte a ad_user_data e ad_personalization (Consent Mode v2).
-      - Tabela opcional de estados padrão por região.
+      - Sinalizadores opcionais ads_data_redaction e url_passthrough.
