@@ -18,8 +18,18 @@ autoriza a categoria correspondente.
 
 ## Instalação
 
-1. No Gerenciador de Tags, vá em **Modelos** → **Galeria da comunidade** →
-   pesquise por **DPOEasy** → **Adicionar ao espaço de trabalho**.
+Há duas formas de colocar o modelo no contêiner. Escolha uma e siga para o
+passo 2.
+
+1. Adicione o modelo ao espaço de trabalho:
+   - **Pela Galeria da comunidade:** no Gerenciador de Tags, vá em **Modelos**
+     → **Galeria da comunidade** → pesquise por **DPOEasy** → **Adicionar ao
+     espaço de trabalho**.
+   - **Pela importação do arquivo:** baixe o `template.tpl` deste repositório
+     (ou o arquivo `.tpl` distribuído pela DPOEasy). No Gerenciador de Tags, vá
+     em **Modelos** → **Modelos de tag** → **Novo**, abra o menu **⋮** no canto
+     superior direito, escolha **Importar**, selecione o arquivo e clique em
+     **Salvar**.
 2. Crie uma tag do tipo **DPOEasy — Consentimento do Usuário**.
 3. Em acionadores, selecione **Consent Initialization - All Pages**.
 
@@ -28,6 +38,14 @@ autoriza a categoria correspondente.
 > eventos, que é o que garante o estado padrão negado a tempo.
 
 4. Publique o contêiner.
+
+### Atualizar um modelo importado
+
+Quem instalou por arquivo atualiza importando o arquivo novo por cima do modelo
+atual: em **Modelos** → **Modelos de tag**, abra o modelo DPOEasy, escolha
+**⋮** → **Importar**, selecione o `.tpl` novo e clique em **Salvar**. As tags
+que já usam o modelo continuam ligadas a ele. Abra uma delas para conferir os
+campos e publique o contêiner.
 
 O script do banner DPOEasy deve continuar carregando normalmente no site (ou
 via uma tag de HTML personalizado no próprio GTM). O modelo não substitui o
