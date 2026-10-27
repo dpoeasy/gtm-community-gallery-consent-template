@@ -51,9 +51,9 @@ campos e publique o contêiner.
 O modelo não substitui o banner: ele comunica ao Google as escolhas que o
 banner registra.
 
-> **Instale o script do banner no HTML, antes do snippet do GTM.** Assim o
-> sinal inicial configurado no DPOEasy chega ao Google antes das tags e o
-> modelo o respeita. Com o banner carregado por uma tag de HTML personalizado
+> **Instale o script do banner no HTML, de preferência antes do snippet do
+> GTM.** Assim o sinal inicial configurado no DPOEasy já está disponível quando
+> o modelo roda, e o modelo o aplica. Com o banner carregado por uma tag de HTML personalizado
 > no próprio GTM, o modelo nega todas as categorias não essenciais até o
 > banner carregar, e as tags de *All Pages* rodam com esse negado.
 
@@ -65,10 +65,12 @@ Não há nada a configurar no modelo. O sinal inicial é configurado no banner,
 na tela do DPOEasy: cada categoria (funcionalidade, analytics, publicidade)
 começa como "Negado" ou "Concedido".
 
-- **Banner no HTML antes do snippet do GTM:** o banner manda esse sinal e
-  grava a marca `window.dpoeasyConsentDefaultSent`. O modelo lê a marca e não
-  aplica o próprio estado padrão por cima.
-- **Sem a marca** (banner carregado por tag do GTM, ou ausente): o modelo nega
+- **Banner no HTML** (antes ou depois do snippet do GTM): o banner expõe os
+  valores desse sinal em `window.dpoeasyConsentDefault`, e o modelo os aplica
+  como estado padrão no Consent Initialization. Só os seis tipos de
+  consentimento conhecidos são lidos, e qualquer valor diferente de `granted`
+  vira `denied`.
+- **Sem esse objeto** (banner carregado por tag do GTM, ou ausente): o modelo nega
   todas as categorias não essenciais em qualquer região, com
   `wait_for_update: 500`, que dá 500 ms para o banner informar as escolhas do
   visitante antes das tags dispararem.
@@ -98,7 +100,7 @@ Tag Manager impede qualquer operação não declarada:
 | Acessa estado de consentimento | Leitura e escrita dos 7 tipos do Consent Mode v2 |
 | Grava na camada de dados | Somente as chaves `ads_data_redaction` e `url_passthrough` |
 | Registra no console | Apenas mensagens de diagnóstico quando o cookie está ilegível |
-| Acessa variáveis globais | Somente leitura de `dpoeasyConsentDefaultSent`, a marca gravada pelo banner. Sem escrita nem execução |
+| Acessa variáveis globais | Somente leitura de `dpoeasyConsentDefault`, o sinal inicial exposto pelo banner. Sem escrita nem execução |
 
 Não há permissão de envio de pixel, de requisição HTTP, de acesso ao
 `localStorage`, nem de leitura de outras variáveis globais. Você pode conferir na aba

@@ -36,7 +36,7 @@ ___TEMPLATE_PARAMETERS___
   {
     "type": "LABEL",
     "name": "infoLabel",
-    "displayName": "Este modelo segue o sinal inicial configurado no banner DPOEasy quando o script do banner é instalado no HTML antes do snippet do GTM. Com o banner carregado por uma tag do GTM, o modelo nega todas as categorias não essenciais até o banner carregar. Acione a tag com o acionador \"Consent Initialization - All Pages\"."
+    "displayName": "Este modelo segue o sinal inicial configurado no banner DPOEasy quando o script do banner é instalado no HTML (de preferência antes do snippet do GTM). Com o banner carregado por uma tag do GTM, o modelo nega todas as categorias não essenciais até o banner carregar. Acione a tag com o acionador \"Consent Initialization - All Pages\"."
   },
   {
     "type": "GROUP",
@@ -80,12 +80,19 @@ const JSON = require('JSON');
 
 const COOKIE_NAME = 'DPOEasyUserConsent';
 const WAIT_FOR_UPDATE = 500;
-// Gravada pelo banner logo depois de mandar o próprio default ao Google
-const BANNER_DEFAULT_SENT_KEY = 'dpoeasyConsentDefaultSent';
+// Gravado pelo banner com os mesmos valores do default que ele manda ao Google
+const BANNER_DEFAULT_KEY = 'dpoeasyConsentDefault';
+const CONSENT_TYPES = [
+  'ad_storage',
+  'ad_user_data',
+  'ad_personalization',
+  'analytics_storage',
+  'functionality_storage',
+  'personalization_storage'
+];
 
-// Estado padrão: nega tudo que não for essencial. Aplicado sempre que o banner
-// ainda não mandou o default dele. O modelo não expõe nenhuma configuração
-// capaz de afrouxar este estado.
+// Estado padrão sem o banner: nega tudo que não for essencial. O modelo não
+// expõe nenhuma configuração capaz de afrouxar este estado.
 const ALL_DENIED = {
   ad_storage: 'denied',
   ad_user_data: 'denied',
@@ -172,12 +179,29 @@ const onUserConsent = (cookieValues) => {
 };
 
 /*
+ *   Estado padrão a partir do sinal inicial configurado no DPOEasy, que o
+ *   banner expõe em window.dpoeasyConsentDefault. Com o banner no HTML, o
+ *   objeto já existe no Consent Initialization, antes ou depois do snippet do
+ *   GTM: aplicá-lo aqui vale seja qual for a ordem na fila. Só os 6 tipos
+ *   conhecidos são lidos; o que não for 'granted' vira 'denied'. Sem o objeto
+ *   (banner por tag do GTM, ou ausente), nega tudo.
+ */
+const buildDefaultState = (bannerDefault) => {
+  if (!bannerDefault || typeof bannerDefault !== 'object') return ALL_DENIED;
+
+  const state = {
+    security_storage: 'granted',
+    wait_for_update: WAIT_FOR_UPDATE
+  };
+  CONSENT_TYPES.forEach(type => {
+    state[type] = bannerDefault[type] === 'granted' ? 'granted' : 'denied';
+  });
+  return state;
+};
+
+/*
  *   Executa o comando de default e, se houver cookie, aplica o consentimento
  *   já registrado pelo visitante.
- *
- *   Com o script do banner no HTML antes do snippet do GTM, o default do
- *   banner (com o sinal inicial configurado no DPOEasy) já foi aplicado quando
- *   este modelo roda. Aplicar o negado por cima o apagaria, então o modelo cede.
  */
 const main = (data) => {
   gtagSet({
@@ -185,9 +209,7 @@ const main = (data) => {
     url_passthrough: data.url_passthrough === true
   });
 
-  if (copyFromWindow(BANNER_DEFAULT_SENT_KEY) !== true) {
-    setDefaultConsentState(ALL_DENIED);
-  }
+  setDefaultConsentState(buildDefaultState(copyFromWindow(BANNER_DEFAULT_KEY)));
 
   const cookieValues = getCookieValues(COOKIE_NAME);
   if (cookieValues && cookieValues.length > 0) {
@@ -560,7 +582,7 @@ ___WEB_PERMISSIONS___
                 "mapValue": [
                   {
                     "type": 1,
-                    "string": "dpoeasyConsentDefaultSent"
+                    "string": "dpoeasyConsentDefault"
                   },
                   {
                     "type": 8,
@@ -741,48 +763,71 @@ scenarios:
     runCode({});
 
     assertThat(defaults.length).isEqualTo(1);
-- name: Banner ja mandou o default - modelo nao aplica o proprio negado
+- name: Aplica o sinal inicial exposto pelo banner
   code: |-
     mock('copyFromWindow', function(key) {
-      return key === 'dpoeasyConsentDefaultSent' ? true : undefined;
-    });
-    mock('getCookieValues', function() {
-      return ['{"consents":{"mode":"custom","necessary":["necessary"],"analytics":["analytics"],"analytic":["analytics"],"functionality":[],"advertising":[],"marketing":[]}}'];
-    });
-
-    let defaults = 0;
-    mock('setDefaultConsentState', function() {
-      defaults++;
-    });
-
-    let update;
-    mock('updateConsentState', function(state) {
-      update = state;
-    });
-
-    runCode({});
-
-    assertThat(defaults).isEqualTo(0);
-    assertThat(update.analytics_storage).isEqualTo('granted');
-    assertThat(update.functionality_storage).isEqualTo('denied');
-    assertApi('gtmOnSuccess').wasCalled();
-- name: Marca do banner diferente de true mantem o negado
-  code: |-
-    mock('copyFromWindow', function() {
-      return 'true';
+      return key === 'dpoeasyConsentDefault' ? {analytics_storage: 'granted', ad_storage: 'denied', ad_user_data: 'denied', ad_personalization: 'denied', functionality_storage: 'granted', personalization_storage: 'granted', security_storage: 'granted'} : undefined;
     });
     mock('getCookieValues', function() {
       return [];
     });
 
-    let defaults = 0;
-    mock('setDefaultConsentState', function() {
-      defaults++;
+    let defaults = [];
+    mock('setDefaultConsentState', function(state) {
+      defaults.push(state);
     });
 
     runCode({});
 
-    assertThat(defaults).isEqualTo(1);
+    assertThat(defaults.length).isEqualTo(1);
+    assertThat(defaults[0].analytics_storage).isEqualTo('granted');
+    assertThat(defaults[0].functionality_storage).isEqualTo('granted');
+    assertThat(defaults[0].personalization_storage).isEqualTo('granted');
+    assertThat(defaults[0].ad_storage).isEqualTo('denied');
+    assertThat(defaults[0].ad_user_data).isEqualTo('denied');
+    assertThat(defaults[0].ad_personalization).isEqualTo('denied');
+    assertThat(defaults[0].security_storage).isEqualTo('granted');
+    assertApi('gtmOnSuccess').wasCalled();
+- name: Valor invalido no sinal do banner vira denied
+  code: |-
+    mock('copyFromWindow', function(key) {
+      return key === 'dpoeasyConsentDefault' ? {analytics_storage: 'yes', ad_storage: 'granted', unknown_type: 'granted'} : undefined;
+    });
+    mock('getCookieValues', function() {
+      return [];
+    });
+
+    let defaults = [];
+    mock('setDefaultConsentState', function(state) {
+      defaults.push(state);
+    });
+
+    runCode({});
+
+    assertThat(defaults.length).isEqualTo(1);
+    assertThat(defaults[0].analytics_storage).isEqualTo('denied');
+    assertThat(defaults[0].ad_storage).isEqualTo('granted');
+    assertThat(defaults[0].functionality_storage).isEqualTo('denied');
+    assertThat(defaults[0].unknown_type).isEqualTo(undefined);
+- name: Sinal do banner que nao e objeto mantem o negado
+  code: |-
+    mock('copyFromWindow', function(key) {
+      return key === 'dpoeasyConsentDefault' ? 'granted' : undefined;
+    });
+    mock('getCookieValues', function() {
+      return [];
+    });
+
+    let defaults = [];
+    mock('setDefaultConsentState', function(state) {
+      defaults.push(state);
+    });
+
+    runCode({});
+
+    assertThat(defaults.length).isEqualTo(1);
+    assertThat(defaults[0].analytics_storage).isEqualTo('denied');
+    assertThat(defaults[0].ad_storage).isEqualTo('denied');
 - name: Cookie que nao e JSON nao dispara updateConsentState
   code: |-
     mock('getCookieValues', function() {
