@@ -7,8 +7,9 @@ o consentimento do visitante.
 
 ## O que ele faz
 
-1. Define o estado padrão de consentimento como **negado** para todas as
-   categorias não essenciais, antes de qualquer tag disparar.
+1. Define o estado padrão de consentimento. Se o banner DPOEasy já mandou o
+   sinal inicial dele, o modelo segue esse sinal. Se não, nega todas as
+   categorias não essenciais antes de qualquer tag disparar.
 2. Lê o cookie `DPOEasyUserConsent`, gravado pelo banner DPOEasy.
 3. Aplica as escolhas já registradas pelo visitante via `updateConsentState`.
 
@@ -47,26 +48,33 @@ atual: em **Modelos** → **Modelos de tag**, abra o modelo DPOEasy, escolha
 que já usam o modelo continuam ligadas a ele. Abra uma delas para conferir os
 campos e publique o contêiner.
 
-O script do banner DPOEasy deve continuar carregando normalmente no site (ou
-via uma tag de HTML personalizado no próprio GTM). O modelo não substitui o
-banner — ele apenas comunica ao Google as escolhas que o banner registra.
+O modelo não substitui o banner: ele comunica ao Google as escolhas que o
+banner registra.
+
+> **Instale o script do banner no HTML, antes do snippet do GTM.** Assim o
+> sinal inicial configurado no DPOEasy chega ao Google antes das tags e o
+> modelo o respeita. Com o banner carregado por uma tag de HTML personalizado
+> no próprio GTM, o modelo nega todas as categorias não essenciais até o
+> banner carregar, e as tags de *All Pages* rodam com esse negado.
 
 ## Configuração
 
 ### Estado padrão
 
-Não há nada a configurar. O modelo nega todas as categorias não essenciais em
-qualquer região, sempre, e **não expõe nenhuma opção capaz de afrouxar esse
-comportamento** — não existe configuração que faça o consentimento falhar
-aberto.
+Não há nada a configurar no modelo. O sinal inicial é configurado no banner,
+na tela do DPOEasy: cada categoria (funcionalidade, analytics, publicidade)
+começa como "Negado" ou "Concedido".
 
-A chamada usa `wait_for_update: 500`, que dá 500 ms para o banner informar as
-escolhas do visitante antes das tags dispararem.
+- **Banner no HTML antes do snippet do GTM:** o banner manda esse sinal e
+  grava a marca `window.dpoeasyConsentDefaultSent`. O modelo lê a marca e não
+  aplica o próprio estado padrão por cima.
+- **Sem a marca** (banner carregado por tag do GTM, ou ausente): o modelo nega
+  todas as categorias não essenciais em qualquer região, com
+  `wait_for_update: 500`, que dá 500 ms para o banner informar as escolhas do
+  visitante antes das tags dispararem.
 
-Se o seu caso exige estado padrão diferente por país — por exemplo liberar
-analytics onde não se exige consentimento prévio — abra uma issue descrevendo o
-cenário. A funcionalidade foi deliberadamente deixada de fora desta versão para
-que não exista configuração capaz de enfraquecer a proteção por engano.
+O modelo em si não expõe nenhuma opção capaz de afrouxar o estado padrão. O que
+fica concedido no início é o que a organização configurou no DPOEasy.
 
 ### Redação de dados de anúncios e passagem de URL
 
@@ -90,9 +98,10 @@ Tag Manager impede qualquer operação não declarada:
 | Acessa estado de consentimento | Leitura e escrita dos 7 tipos do Consent Mode v2 |
 | Grava na camada de dados | Somente as chaves `ads_data_redaction` e `url_passthrough` |
 | Registra no console | Apenas mensagens de diagnóstico quando o cookie está ilegível |
+| Acessa variáveis globais | Somente leitura de `dpoeasyConsentDefaultSent`, a marca gravada pelo banner. Sem escrita nem execução |
 
 Não há permissão de envio de pixel, de requisição HTTP, de acesso ao
-`localStorage`, nem de leitura de variáveis globais. Você pode conferir na aba
+`localStorage`, nem de leitura de outras variáveis globais. Você pode conferir na aba
 **Permissões** do editor de modelos antes de instalar.
 
 ## Mapeamento de categorias
