@@ -1,6 +1,13 @@
 homepage: "https://www.dponet.com.br"
 documentation: "https://github.com/dpoeasy/gtm-community-gallery-consent-template#readme"
 versions:
+  - sha: a84546a6d8009eac8210fa5e37eaf9321bbfb7a0
+    changeNotes: |
+      Corrige o "Aceitar todos".
+      - O accept_all passa a conceder só as categorias que o banner mostrou
+        (array com itens no cookie). A categoria que ficou de fora segue negada.
+      - Suporte ao formato compacto do cookie, em que a categoria aceita vale a
+        própria chave (por exemplo ["analytics"]).
   - sha: 84e077872686535eb347cab072e675957fa7654e
     changeNotes: |
       Versão inicial.
