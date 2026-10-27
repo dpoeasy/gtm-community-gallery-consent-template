@@ -112,21 +112,24 @@ O modelo lê o cookie `DPOEasyUserConsent`, no formato:
 }
 ```
 
-Cada categoria é um array com os nomes dos cookies consentidos. O banner grava
-a mesma categoria sob todos os seus aliases (`analytics` e `analytic`,
-`advertising` e `marketing`, `unknown` e `others`).
+Cada categoria é um array. No formato antigo, ele traz os nomes dos cookies
+consentidos. No formato compacto, gravado pelas versões atuais do banner, traz
+só a chave da categoria aceita (`["analytics"]`) ou fica vazio (`[]`). O banner
+grava a mesma categoria sob todos os seus aliases (`analytics` e `analytic`,
+`advertising` e `marketing`, `unknown` e `others`) e só grava as categorias que
+aparecem nele.
 
 A resolução do consentimento segue a mesma regra do banner:
 
 | `consents.mode` | Comportamento |
 |---|---|
-| `accept_all` | Todas as categorias concedidas. |
+| `accept_all` | Concede as categorias que aparecem no banner (array com itens). |
 | `reject_non_essential` | Apenas `necessary`. |
 | customizado | Categoria concedida quando seu array tem ao menos um item. |
 
-No modo customizado, array vazio significa categoria não consentida. O banner
-só exibe categorias com cookies localizados pelo scanner, então um array vazio
-nunca é ambíguo.
+Array vazio ou categoria ausente significa categoria não consentida, inclusive
+no `accept_all`: o "Aceitar todos" não concede ao Google uma categoria que o
+banner não mostrou ao visitante.
 
 > **Manutenção:** a lista de categorias e aliases do modelo espelha
 > `CATEGORY_DEFINITIONS` em `src/config.js` do repositório do banner. Alterações

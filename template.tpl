@@ -109,11 +109,13 @@ const ALL_DENIED = {
  *       "userConsentToken": "..."
  *     }
  *
- *   Cada categoria é um array dos cookies consentidos naquela categoria — NÃO
- *   são chaves de tipos de consentimento do Google. O banner grava a mesma
+ *   Cada categoria é um array: os nomes dos cookies consentidos no formato
+ *   antigo, ou só a chave da categoria no formato compacto (["analytics"]).
+ *   NÃO são chaves de tipos de consentimento do Google. O banner grava a mesma
  *   categoria sob todos os seus aliases (analytics/analytic,
- *   advertising/marketing, unknown/others). O mapeamento abaixo espelha
- *   CATEGORY_DEFINITIONS em src/config.js do repositório do banner.
+ *   advertising/marketing, unknown/others) e só grava as categorias que
+ *   aparecem no banner. O mapeamento abaixo espelha CATEGORY_DEFINITIONS em
+ *   src/config.js do repositório do banner.
  */
 const onUserConsent = (cookieValues) => {
   const raw = cookieValues[0];
@@ -137,14 +139,12 @@ const onUserConsent = (cookieValues) => {
   }
 
   const c = cookieObj.consents;
-  const acceptedAll = c.mode === 'accept_all';
   const rejectedAll = c.mode === 'reject_non_essential';
 
-  // Modo customizado: categoria concedida quando algum alias tem ao menos um
-  // item. O banner só exibe categorias com cookies localizados pelo scanner,
-  // então array vazio nunca é ambíguo.
+  // Categoria concedida quando algum alias tem ao menos um item, inclusive no
+  // accept_all: o "Aceitar todos" aceita só as categorias que o banner
+  // mostrou, e a que ficou de fora chega vazia ou ausente no cookie.
   const granted = (aliases) => {
-    if (acceptedAll) return true;
     if (rejectedAll) return false;
     let result = false;
     aliases.forEach(alias => {
@@ -552,10 +552,10 @@ scenarios:
     assertThat(defaults[0].wait_for_update).isEqualTo(500);
     assertThat(updated).isFalse();
     assertApi('gtmOnSuccess').wasCalled();
-- name: accept_all concede todas as categorias
+- name: accept_all concede todas as categorias que o banner mostrou
   code: |-
     mock('getCookieValues', function() {
-      return ['{"consents":{"mode":"accept_all","necessary":[],"analytics":[],"functionality":[],"advertising":[]}}'];
+      return ['{"consents":{"mode":"accept_all","necessary":["necessary"],"analytics":["analytics"],"analytic":["analytics"],"functionality":["functionality"],"advertising":["advertising"],"marketing":["advertising"]}}'];
     });
     mock('setDefaultConsentState', function() {});
 
@@ -572,6 +572,46 @@ scenarios:
     assertThat(update.analytics_storage).isEqualTo('granted');
     assertThat(update.functionality_storage).isEqualTo('granted');
     assertThat(update.personalization_storage).isEqualTo('granted');
+    assertThat(update.security_storage).isEqualTo('granted');
+- name: accept_all nao concede a categoria que o banner nao mostrou (formato compacto)
+  code: |-
+    mock('getCookieValues', function() {
+      return ['{"consents":{"mode":"accept_all","necessary":["necessary"],"analytics":["analytics"],"analytic":["analytics"],"functionality":[],"advertising":["advertising"],"marketing":["advertising"]}}'];
+    });
+    mock('setDefaultConsentState', function() {});
+
+    let update;
+    mock('updateConsentState', function(state) {
+      update = state;
+    });
+
+    runCode({});
+
+    assertThat(update.analytics_storage).isEqualTo('granted');
+    assertThat(update.ad_storage).isEqualTo('granted');
+    assertThat(update.ad_user_data).isEqualTo('granted');
+    assertThat(update.ad_personalization).isEqualTo('granted');
+    assertThat(update.functionality_storage).isEqualTo('denied');
+    assertThat(update.personalization_storage).isEqualTo('denied');
+    assertThat(update.security_storage).isEqualTo('granted');
+- name: accept_all nao concede a categoria ausente do cookie (formato antigo)
+  code: |-
+    mock('getCookieValues', function() {
+      return ['{"consents":{"mode":"accept_all","necessary":["DPOEasyUserConsent"],"analytics":["_ga"],"analytic":["_ga"],"advertising":["_gcl_au"],"marketing":["_gcl_au"]}}'];
+    });
+    mock('setDefaultConsentState', function() {});
+
+    let update;
+    mock('updateConsentState', function(state) {
+      update = state;
+    });
+
+    runCode({});
+
+    assertThat(update.analytics_storage).isEqualTo('granted');
+    assertThat(update.ad_storage).isEqualTo('granted');
+    assertThat(update.functionality_storage).isEqualTo('denied');
+    assertThat(update.personalization_storage).isEqualTo('denied');
     assertThat(update.security_storage).isEqualTo('granted');
 - name: reject_non_essential concede apenas necessary
   code: |-
