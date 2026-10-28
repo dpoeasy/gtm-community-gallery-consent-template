@@ -1,6 +1,16 @@
 homepage: "https://www.dponet.com.br"
 documentation: "https://github.com/dpoeasy/gtm-community-gallery-consent-template#readme"
 versions:
+  - sha: ebc3b5b21e225e4b2175a418a76532ae12ed84f6
+    changeNotes: |
+      Segue o sinal inicial do banner e corrige o "Aceitar todos".
+      - Com o script do banner no HTML, o modelo aplica como estado padrão o
+        sinal inicial configurado no DPOEasy, exposto pelo banner em
+        window.dpoeasyConsentDefault. Sem ele, o negado padrão continua.
+      - O accept_all passa a conceder só as categorias que o banner mostrou
+        (array com itens no cookie). A categoria que ficou de fora segue negada.
+      - Suporte ao formato compacto do cookie, em que a categoria aceita vale a
+        própria chave (por exemplo ["analytics"]).
   - sha: 84e077872686535eb347cab072e675957fa7654e
     changeNotes: |
       Versão inicial.

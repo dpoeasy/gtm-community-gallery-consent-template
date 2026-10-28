@@ -7,8 +7,9 @@ o consentimento do visitante.
 
 ## O que ele faz
 
-1. Define o estado padrão de consentimento como **negado** para todas as
-   categorias não essenciais, antes de qualquer tag disparar.
+1. Define o estado padrão de consentimento. Se o banner DPOEasy já mandou o
+   sinal inicial dele, o modelo segue esse sinal. Se não, nega todas as
+   categorias não essenciais antes de qualquer tag disparar.
 2. Lê o cookie `DPOEasyUserConsent`, gravado pelo banner DPOEasy.
 3. Aplica as escolhas já registradas pelo visitante via `updateConsentState`.
 
@@ -18,8 +19,18 @@ autoriza a categoria correspondente.
 
 ## Instalação
 
-1. No Gerenciador de Tags, vá em **Modelos** → **Galeria da comunidade** →
-   pesquise por **DPOEasy** → **Adicionar ao espaço de trabalho**.
+Há duas formas de colocar o modelo no contêiner. Escolha uma e siga para o
+passo 2.
+
+1. Adicione o modelo ao espaço de trabalho:
+   - **Pela Galeria da comunidade:** no Gerenciador de Tags, vá em **Modelos**
+     → **Galeria da comunidade** → pesquise por **DPOEasy** → **Adicionar ao
+     espaço de trabalho**.
+   - **Pela importação do arquivo:** baixe o `template.tpl` deste repositório
+     (ou o arquivo `.tpl` distribuído pela DPOEasy). No Gerenciador de Tags, vá
+     em **Modelos** → **Modelos de tag** → **Novo**, abra o menu **⋮** no canto
+     superior direito, escolha **Importar**, selecione o arquivo e clique em
+     **Salvar**.
 2. Crie uma tag do tipo **DPOEasy — Consentimento do Usuário**.
 3. Em acionadores, selecione **Consent Initialization - All Pages**.
 
@@ -29,26 +40,43 @@ autoriza a categoria correspondente.
 
 4. Publique o contêiner.
 
-O script do banner DPOEasy deve continuar carregando normalmente no site (ou
-via uma tag de HTML personalizado no próprio GTM). O modelo não substitui o
-banner — ele apenas comunica ao Google as escolhas que o banner registra.
+### Atualizar um modelo importado
+
+Quem instalou por arquivo atualiza importando o arquivo novo por cima do modelo
+atual: em **Modelos** → **Modelos de tag**, abra o modelo DPOEasy, escolha
+**⋮** → **Importar**, selecione o `.tpl` novo e clique em **Salvar**. As tags
+que já usam o modelo continuam ligadas a ele. Abra uma delas para conferir os
+campos e publique o contêiner.
+
+O modelo não substitui o banner: ele comunica ao Google as escolhas que o
+banner registra.
+
+> **Instale o script do banner no HTML, de preferência antes do snippet do
+> GTM.** Assim o sinal inicial configurado no DPOEasy já está disponível quando
+> o modelo roda, e o modelo o aplica. Com o banner carregado por uma tag de HTML personalizado
+> no próprio GTM, o modelo nega todas as categorias não essenciais até o
+> banner carregar, e as tags de *All Pages* rodam com esse negado.
 
 ## Configuração
 
 ### Estado padrão
 
-Não há nada a configurar. O modelo nega todas as categorias não essenciais em
-qualquer região, sempre, e **não expõe nenhuma opção capaz de afrouxar esse
-comportamento** — não existe configuração que faça o consentimento falhar
-aberto.
+Não há nada a configurar no modelo. O sinal inicial é configurado no banner,
+na tela do DPOEasy: cada categoria (funcionalidade, analytics, publicidade)
+começa como "Negado" ou "Concedido".
 
-A chamada usa `wait_for_update: 500`, que dá 500 ms para o banner informar as
-escolhas do visitante antes das tags dispararem.
+- **Banner no HTML** (antes ou depois do snippet do GTM): o banner expõe os
+  valores desse sinal em `window.dpoeasyConsentDefault`, e o modelo os aplica
+  como estado padrão no Consent Initialization. Só os seis tipos de
+  consentimento conhecidos são lidos, e qualquer valor diferente de `granted`
+  vira `denied`.
+- **Sem esse objeto** (banner carregado por tag do GTM, ou ausente): o modelo nega
+  todas as categorias não essenciais em qualquer região, com
+  `wait_for_update: 500`, que dá 500 ms para o banner informar as escolhas do
+  visitante antes das tags dispararem.
 
-Se o seu caso exige estado padrão diferente por país — por exemplo liberar
-analytics onde não se exige consentimento prévio — abra uma issue descrevendo o
-cenário. A funcionalidade foi deliberadamente deixada de fora desta versão para
-que não exista configuração capaz de enfraquecer a proteção por engano.
+O modelo em si não expõe nenhuma opção capaz de afrouxar o estado padrão. O que
+fica concedido no início é o que a organização configurou no DPOEasy.
 
 ### Redação de dados de anúncios e passagem de URL
 
@@ -72,9 +100,10 @@ Tag Manager impede qualquer operação não declarada:
 | Acessa estado de consentimento | Leitura e escrita dos 7 tipos do Consent Mode v2 |
 | Grava na camada de dados | Somente as chaves `ads_data_redaction` e `url_passthrough` |
 | Registra no console | Apenas mensagens de diagnóstico quando o cookie está ilegível |
+| Acessa variáveis globais | Somente leitura de `dpoeasyConsentDefault`, o sinal inicial exposto pelo banner. Sem escrita nem execução |
 
 Não há permissão de envio de pixel, de requisição HTTP, de acesso ao
-`localStorage`, nem de leitura de variáveis globais. Você pode conferir na aba
+`localStorage`, nem de leitura de outras variáveis globais. Você pode conferir na aba
 **Permissões** do editor de modelos antes de instalar.
 
 ## Mapeamento de categorias
@@ -112,21 +141,24 @@ O modelo lê o cookie `DPOEasyUserConsent`, no formato:
 }
 ```
 
-Cada categoria é um array com os nomes dos cookies consentidos. O banner grava
-a mesma categoria sob todos os seus aliases (`analytics` e `analytic`,
-`advertising` e `marketing`, `unknown` e `others`).
+Cada categoria é um array. No formato antigo, ele traz os nomes dos cookies
+consentidos. No formato compacto, gravado pelas versões atuais do banner, traz
+só a chave da categoria aceita (`["analytics"]`) ou fica vazio (`[]`). O banner
+grava a mesma categoria sob todos os seus aliases (`analytics` e `analytic`,
+`advertising` e `marketing`, `unknown` e `others`) e só grava as categorias que
+aparecem nele.
 
 A resolução do consentimento segue a mesma regra do banner:
 
 | `consents.mode` | Comportamento |
 |---|---|
-| `accept_all` | Todas as categorias concedidas. |
+| `accept_all` | Concede as categorias que aparecem no banner (array com itens). |
 | `reject_non_essential` | Apenas `necessary`. |
 | customizado | Categoria concedida quando seu array tem ao menos um item. |
 
-No modo customizado, array vazio significa categoria não consentida. O banner
-só exibe categorias com cookies localizados pelo scanner, então um array vazio
-nunca é ambíguo.
+Array vazio ou categoria ausente significa categoria não consentida, inclusive
+no `accept_all`: o "Aceitar todos" não concede ao Google uma categoria que o
+banner não mostrou ao visitante.
 
 > **Manutenção:** a lista de categorias e aliases do modelo espelha
 > `CATEGORY_DEFINITIONS` em `src/config.js` do repositório do banner. Alterações
